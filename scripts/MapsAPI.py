@@ -1,0 +1,103 @@
+"""Работа с API"""
+
+# Работа с файлами и ОС
+import os
+from dotenv import load_dotenv
+from sys import exit as sys_exit
+# Работа с кэшом
+from scripts.Cacher import Cacher
+# Графика
+import arcade
+# Работа с API
+import requests
+
+# Загрузка переменных окружения из .env файла
+load_dotenv(".env")
+
+
+class API:
+    """Класс для работы с API"""
+
+    class Base:
+        """Класс макетов для работы с API"""
+
+        class Response:
+            """Класс с методами для работы с запросами"""
+
+            @staticmethod
+            def get(server_address: str, params: dict) -> requests.Response:
+                """Стандартный GET-запрос"""
+
+                try:
+                    # Запрос
+                    response: requests.Response = requests.get(server_address, params=params)
+
+                    if response:  # Выдача результата при верном запросе
+                        return response
+                    else:  # Вызов ошибки при неверном запросе
+                        API.Base.Response.call_error(response)
+                except requests.exceptions.ConnectionError:
+                    # Вывод ошибки
+                    print("Подключение к интернету отсутствует")
+
+                    # Завершение работы
+                    sys_exit(1)
+
+            @staticmethod
+            def call_error(response: requests.Response) -> None:
+                """Вызов ошибки"""
+
+                # Вывод ошибки
+                print(response.url)
+                print(f"Status code: {response.status_code} ({response.reason})")
+
+                # Завершение работы
+                sys_exit(1)
+
+    class StaticMaps:
+        """Класс для работы с API сервиса static-maps.yandex.ru"""
+
+        @staticmethod
+        def get_map_image(file_name: str, ll: str, spn: str) -> arcade.Texture:
+            """Готовый метод для получения изображения карты"""
+
+            # Запрос
+            response = API.StaticMaps.Response.get(ll, spn)
+            # Сохранение изображения в кэш
+            Cacher.CacheFile.write_cache_file(file_name, response.content)
+            # Загрузка изображения из кэша
+            map_image: arcade.Texture = API.StaticMaps.AnswerProcessing.load_map_image(file_name)
+
+            return map_image
+
+        class Response:
+            """Класс с методами для работы с запросами"""
+
+            @staticmethod
+            def get(ll: str, spn: str) -> requests.Response:
+                """Static-maps GET-запрос"""
+
+                # Параметры запроса
+                server_address = "https://static-maps.yandex.ru/v1"
+                params = {
+                    "apikey": os.getenv("STATIC_MAPS_APIKEY"),
+                    "ll": ll,
+                    "spn": spn,
+                    "size": "650,450"
+                }
+
+                # Запрос
+                response: requests.Response = API.Base.Response.get(server_address, params=params)
+
+                return response
+
+        class AnswerProcessing:
+            """Класс для обработки ответов из запросов"""
+
+            @staticmethod
+            def load_map_image(file_name: str) -> arcade.Texture:
+                """Загрузка изображения карты Static-maps"""
+
+                map_image: arcade.Texture = arcade.load_texture(Cacher.create_cache_path(file_name))
+
+                return map_image
