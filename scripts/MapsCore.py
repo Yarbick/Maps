@@ -15,14 +15,19 @@ class Maps(arcade.Window, API):
     """Основной класс приложения"""
 
     def setup(self):
-        # Получение карты
-        self.get_map_image(LL, SPN)
+        # Масштаб карты
+        self.min_map_zoom: int = 0
+        self.max_map_zoom: int = 21
+        self.map_zoom: int = 12
 
-    def get_map_image(self, ll: str, spn: str) -> None:
+        # Получение карты
+        self.get_map_image()
+
+    def get_map_image(self) -> None:
         """Получение и запись изображения карты из кэша в атрибут класса"""
 
         self.map_image: arcade.Texture = API.StaticMaps.get_map_image(
-            Cacher.CACHE_PARAMS["MAP_IMAGE_FILE_NAME"], ll, spn
+            Cacher.CACHE_PARAMS["MAP_IMAGE_FILE_NAME"], ll=LL, z=str(self.map_zoom)
         )
 
     # Методы arcade.Window
@@ -33,3 +38,11 @@ class Maps(arcade.Window, API):
         arcade.draw_texture_rect(
             self.map_image, arcade.Rect(0, 0, 0, 0, self.width, self.height, self.width / 2, self.height / 2)
         )
+
+    def on_key_press(self, key: int, modifiers: int) -> None:
+        # Зум карты
+        if key == arcade.key.PAGEUP or key == arcade.key.PAGEDOWN:
+            delta_zoom: int = 1 if key == arcade.key.PAGEUP else -1
+            if self.min_map_zoom <= self.map_zoom + delta_zoom <= self.max_map_zoom:
+                self.map_zoom += delta_zoom
+                self.get_map_image()

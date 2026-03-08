@@ -58,11 +58,11 @@ class API:
         """Класс для работы с API сервиса static-maps.yandex.ru"""
 
         @staticmethod
-        def get_map_image(file_name: str, ll: str, spn: str) -> arcade.Texture:
+        def get_map_image(file_name: str, **params) -> arcade.Texture:
             """Готовый метод для получения изображения карты"""
 
             # Запрос
-            response = API.StaticMaps.Response.get(ll, spn)
+            response = API.StaticMaps.Response.get(**params)
             # Сохранение изображения в кэш
             Cacher.CacheFile.write_cache_file(file_name, response.content)
             # Загрузка изображения из кэша
@@ -74,17 +74,12 @@ class API:
             """Класс с методами для работы с запросами"""
 
             @staticmethod
-            def get(ll: str, spn: str) -> requests.Response:
+            def get(**params) -> requests.Response:
                 """Static-maps GET-запрос"""
 
                 # Параметры запроса
                 server_address = "https://static-maps.yandex.ru/v1"
-                params = {
-                    "apikey": os.getenv("STATIC_MAPS_APIKEY"),
-                    "ll": ll,
-                    "spn": spn,
-                    "size": "650,450"
-                }
+                params["apikey"] = params.get("apikey", os.getenv("STATIC_MAPS_APIKEY"))
 
                 # Запрос
                 response: requests.Response = API.Base.Response.get(server_address, params=params)
