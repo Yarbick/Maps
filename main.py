@@ -7,8 +7,8 @@ from scripts.MapsCore import Maps
 
 # Константы окна
 TITLE: str = "Maps"
-SCREEN_WIDTH: int = 650
-SCREEN_HEIGHT: int = 450
+SCREEN_WIDTH: int = 648
+SCREEN_HEIGHT: int = 448
 
 
 def main() -> None:

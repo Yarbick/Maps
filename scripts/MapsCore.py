@@ -4,6 +4,9 @@
 from scripts.Cacher import Cacher
 # Работа с графикой
 import arcade
+import arcade.gui
+import data.styles.ui.light_theme as light_theme_style
+import data.styles.ui.light_theme as dark_theme_style
 # Работа с API
 from scripts.MapsAPI import API
 
@@ -12,6 +15,15 @@ class Maps(arcade.Window, API):
     """Основной класс приложения"""
 
     def setup(self):
+        self.theme = "light"
+
+        self.setup_map()
+        self.setup_ui()
+
+    # Методы карты
+    def setup_map(self) -> None:
+        """Загрузка карты"""
+
         # Масштаб карты
         self.min_map_z, self.max_map_z = 0, 21
         self.delta_map_z_coef = 1
@@ -32,8 +44,44 @@ class Maps(arcade.Window, API):
         self.map_image: arcade.Texture = API.StaticMaps.get_map_image(
             Cacher.CACHE_PARAMS["MAP_IMAGE_FILE_NAME"],
             ll=f"{self.map_long},{self.map_lat}",
-            z=str(self.map_z)
+            z=str(self.map_z),
+            theme=self.theme
         )
+
+    # Методы интерфейса
+    def setup_ui(self) -> None:
+        """Загрузка интерфейса"""
+
+        self.ui_manager: arcade.gui.UIManager = arcade.gui.UIManager()
+        self.ui_manager.enable()
+
+        # Кнопка смены темы
+        self.change_theme_button: arcade.gui.UIFlatButton = arcade.gui.UIFlatButton(
+            width=150, height=40, text="Change theme"
+        )
+        self.change_theme_button.on_click = lambda event: self.change_theme()
+        self.ui_manager.add(self.change_theme_button)
+
+        # Настройка расположения и стилей виджетов
+        self.update_ui()
+
+    def update_ui(self) -> None:
+        """Обновление параметров UI под текущие параметры окна"""
+
+        theme_style = light_theme_style if self.theme == "light" else dark_theme_style
+
+        # Кнопка смены темы
+        self.change_theme_button.right, self.change_theme_button.top = self.width - 10, self.height - 10
+        self.change_theme_button.style = theme_style.uiflatbutton
+
+    def change_theme(self) -> None:
+        """Изменение темы приложения (тёмная/светлая)"""
+
+        self.theme = "light" if self.theme == "dark" else "dark"
+
+        # Смена темы у всех объектов
+        self.update_ui()
+        self.get_map_image()
 
     # Методы arcade.Window
     def on_draw(self) -> None:
@@ -43,6 +91,13 @@ class Maps(arcade.Window, API):
         arcade.draw_texture_rect(
             self.map_image, arcade.Rect(0, 0, 0, 0, self.width, self.height, self.width / 2, self.height / 2)
         )
+
+        # Отрисовка интерфейса
+        self.ui_manager.draw()
+
+    def on_resize(self, width: int, height: int) -> None:
+        # Изменение положения интерфейса
+        self.update_ui()
 
     def on_key_press(self, key: int, modifiers: int) -> None:
         map_changed = False  # Флаг для обновления карты только при наличии изменений
