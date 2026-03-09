@@ -30,5 +30,29 @@ DEFAULT_BUTTON_STYLE = {
         font_color=(220, 220, 220)
     )
 }
+DEFAULT_INPUT_TEXT_STYLE = {
+    "normal": arcade.gui.UIInputText.UIStyle(
+        bg=(40, 40, 40),
+        border_width=2,
+        border=(0, 200, 120)
+    ),
+    "hover": arcade.gui.UIInputText.UIStyle(
+        bg=(40, 40, 40),
+        border_width=4,
+        border=(0, 220, 132)
+    ),
+    "press": arcade.gui.UIInputText.UIStyle(
+        bg=(40, 40, 40),
+        border_width=4,
+        border=(0, 240, 144)
+    ),
+    "disabled": arcade.gui.UIInputText.UIStyle(
+        bg=(80, 80, 80),
+        border_width=2,
+        border=(0, 200, 120)
+    )
+}
 
+# Стили виджетов
 uiflatbutton = DEFAULT_BUTTON_STYLE
+uiinputtext = DEFAULT_INPUT_TEXT_STYLE

@@ -18,7 +18,7 @@ def main() -> None:
     try:
         # Окно
         maps = Maps(SCREEN_WIDTH, SCREEN_HEIGHT, TITLE, resizable=True)
-        maps.set_minimum_size(390, 270)
+        maps.set_minimum_size(650, 450)
         maps.set_maximum_size(975, 675)
         maps.setup()
 

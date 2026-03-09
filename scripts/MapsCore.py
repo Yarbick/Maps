@@ -6,7 +6,7 @@ from scripts.Cacher import Cacher
 import arcade
 import arcade.gui
 import data.styles.ui.light_theme as light_theme_style
-import data.styles.ui.light_theme as dark_theme_style
+import data.styles.ui.dark_theme as dark_theme_style
 # Работа с API
 from scripts.MapsAPI import API
 
@@ -35,18 +35,12 @@ class Maps(arcade.Window, API):
         self.delta_map_ll_coef = 250
         self.map_long, self.map_lat = 37.617698, 55.755864
 
+        # Метки карты
+        self.map_pt = []
+        self.map_pt_style = "pm2rdm"
+
         # Получение карты
         self.get_map_image()
-
-    def get_map_image(self) -> None:
-        """Получение и запись изображения карты из кэша в атрибут класса"""
-
-        self.map_image: arcade.Texture = API.StaticMaps.get_map_image(
-            Cacher.CACHE_PARAMS["MAP_IMAGE_FILE_NAME"],
-            ll=f"{self.map_long},{self.map_lat}",
-            z=str(self.map_z),
-            theme=self.theme
-        )
 
     # Методы интерфейса
     def setup_ui(self) -> None:
@@ -62,6 +56,19 @@ class Maps(arcade.Window, API):
         self.change_theme_button.on_click = lambda event: self.change_theme()
         self.ui_manager.add(self.change_theme_button)
 
+        # Поле ввода текста для поиска
+        self.search_input_text: arcade.gui.UIInputText = arcade.gui.UIInputText(
+            width=200, height=40, font_size=16, text_color=(140, 140, 140)
+        )
+        self.ui_manager.add(self.search_input_text)
+
+        # Кнопка для поиска
+        self.search_button: arcade.gui.UIFlatButton = arcade.gui.UIFlatButton(
+            width=100, height=40, text="Search"
+        )
+        self.search_button.on_click = lambda event: self.search_toponym(self.search_input_text.text)
+        self.ui_manager.add(self.search_button)
+
         # Настройка расположения и стилей виджетов
         self.update_ui()
 
@@ -74,6 +81,17 @@ class Maps(arcade.Window, API):
         self.change_theme_button.right, self.change_theme_button.top = self.width - 10, self.height - 10
         self.change_theme_button.style = theme_style.uiflatbutton
 
+        # Поле ввода текста для поиска
+        self.search_input_text.left, self.search_input_text.top = 10, self.height - 10
+        self.search_input_text.style = theme_style.uiinputtext
+        # Меняем состояния для обновления стиля
+        self.search_input_text.disabled = not self.search_input_text.disabled
+        self.search_input_text.disabled = not self.search_input_text.disabled
+
+        # Кнопка смены темы
+        self.search_button.left, self.search_button.top = self.search_input_text.right + 5, self.height - 10
+        self.search_button.style = theme_style.uiflatbutton
+
     def change_theme(self) -> None:
         """Изменение темы приложения (тёмная/светлая)"""
 
@@ -82,6 +100,39 @@ class Maps(arcade.Window, API):
         # Смена темы у всех объектов
         self.update_ui()
         self.get_map_image()
+
+    # Запросы
+    def get_map_image(self) -> None:
+        """Получение и запись изображения карты из кэша в атрибут класса"""
+
+        self.map_image: arcade.Texture = API.StaticMaps.get_map_image(
+            Cacher.CACHE_PARAMS["MAP_IMAGE_FILE_NAME"],
+            ll=f"{self.map_long},{self.map_lat}",
+            z=str(self.map_z),
+            pt="~".join(self.map_pt),
+            theme=self.theme
+        )
+
+    def search_toponym(self, geocode: str) -> None:
+        """Поиск топонима и указание на карте"""
+
+        # Получение топонима
+        toponym: dict | None = API.GeocodeMaps.get_toponym(
+            geocode=geocode
+        )
+        if toponym:
+            # Получение информации о топониме
+            toponym_ll: str = API.GeocodeMaps.get_toponym_ll(toponym)
+
+            # Перемещение карты к топониму
+            self.map_long, self.map_lat = map(float, toponym_ll.split(","))
+            # Добавление метки на карту
+            self.map_pt.clear()
+            self.map_pt.append(f"{toponym_ll},{self.map_pt_style}")
+            # Обновление карты
+            self.get_map_image()
+        else:
+            self.search_input_text.text = "Адрес не найден"
 
     # Методы arcade.Window
     def on_draw(self) -> None:
