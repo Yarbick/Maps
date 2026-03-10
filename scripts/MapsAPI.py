@@ -120,6 +120,15 @@ class API:
 
             return toponym_ll
 
+        @staticmethod
+        def get_toponym_address(toponym: dict) -> str:
+            """Готовый метод для получения адреса топонима"""
+
+            # Получение адреса
+            toponym_address: str = API.GeocodeMaps.AnswerProcessing.get_toponym_address(toponym)
+
+            return toponym_address
+
         class Response:
             """Класс с методами для работы с запросами"""
 
@@ -160,3 +169,11 @@ class API:
                 toponym_ll: str = ",".join(toponym["Point"]["pos"].split())
 
                 return toponym_ll
+
+            @staticmethod
+            def get_toponym_address(toponym: dict) -> str:
+                """Получение адреса топонима"""
+
+                toponym_address: str = toponym["metaDataProperty"]["GeocoderMetaData"]["text"]
+
+                return toponym_address

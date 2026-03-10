@@ -76,6 +76,12 @@ class Maps(arcade.Window, API):
         self.clear_result_button.on_click = lambda event: self.clear_result()
         self.ui_manager.add(self.clear_result_button)
 
+        # Поле вывода адреса
+        self.address_label: arcade.gui.UILabel = arcade.gui.UILabel(
+            width=385, height=40
+        )
+        self.ui_manager.add(self.address_label)
+
         # Настройка расположения и стилей виджетов
         self.update_ui()
 
@@ -86,22 +92,32 @@ class Maps(arcade.Window, API):
 
         # Кнопка смены темы
         self.change_theme_button.right, self.change_theme_button.top = self.width - 10, self.height - 10
-        self.change_theme_button.style = theme_style.uiflatbutton
+        self.change_theme_button.style = theme_style.ui_flat_button
 
         # Поле ввода текста для поиска
         self.search_input_text.left, self.search_input_text.top = 10, self.height - 10
-        self.search_input_text.style = theme_style.uiinputtext
+        self.search_input_text.style = theme_style.ui_input_text
         # Меняем состояния для обновления стиля
         self.search_input_text.disabled = not self.search_input_text.disabled
         self.search_input_text.disabled = not self.search_input_text.disabled
 
         # Кнопка поиска
         self.search_button.left, self.search_button.top = self.search_input_text.right + 5, self.height - 10
-        self.search_button.style = theme_style.uiflatbutton
+        self.search_button.style = theme_style.ui_flat_button
 
         # Кнопка очистки результатов поиска
         self.clear_result_button.left, self.clear_result_button.top = self.search_button.right + 5, self.height - 10
-        self.clear_result_button.style = theme_style.uiflatbutton
+        self.clear_result_button.style = theme_style.ui_flat_button
+
+        # Поле вывода адреса
+        self.address_label.left, self.address_label.top = 10, self.search_input_text.bottom - 10
+        self.address_label.update_font(
+            font_size=theme_style.ui_label["font_size"],
+            font_color=theme_style.ui_label["text_color"]
+        )
+        self.address_label._bg_color = theme_style.ui_label["bg_color"]
+        self.address_label._border_color = theme_style.ui_label["border_color"]
+        self.address_label._border_width = theme_style.ui_label["border_width"]
 
     def change_theme(self) -> None:
         """Изменение темы приложения (тёмная/светлая)"""
@@ -114,6 +130,9 @@ class Maps(arcade.Window, API):
 
     def clear_result(self) -> None:
         """Очистка результатов поиска"""
+
+        # Очистка адреса
+        self.address_label.text = ""
 
         # Очистка меток на карте
         self.map_pt.clear()
@@ -142,6 +161,10 @@ class Maps(arcade.Window, API):
         if toponym:
             # Получение информации о топониме
             toponym_ll: str = API.GeocodeMaps.get_toponym_ll(toponym)
+            toponym_address: str = API.GeocodeMaps.get_toponym_address(toponym)
+
+            # Вывод адреса
+            self.address_label.text = toponym_address
 
             # Перемещение карты к топониму
             self.map_long, self.map_lat = map(float, toponym_ll.split(","))

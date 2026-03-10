@@ -52,7 +52,15 @@ DEFAULT_INPUT_TEXT_STYLE = {
         border=(0, 200, 120)
     )
 }
+DEFAULT_LABEL_STYLE = {
+    "font_size": 16,
+    "text_color": (0, 0, 0),
+    "bg_color": arcade.color.Color(220, 220, 220),
+    "border_width": 2,
+    "border_color": arcade.color.Color(0, 200, 120)
+}
 
 # Стили виджетов
-uiflatbutton = DEFAULT_BUTTON_STYLE
-uiinputtext = DEFAULT_INPUT_TEXT_STYLE
+ui_flat_button = DEFAULT_BUTTON_STYLE
+ui_input_text = DEFAULT_INPUT_TEXT_STYLE
+ui_label = DEFAULT_LABEL_STYLE

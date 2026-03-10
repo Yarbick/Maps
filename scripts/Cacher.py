@@ -20,6 +20,8 @@ class Cacher:
             Cacher.CACHE_PARAMS = json_loads(file.read())
 
         # Создание папки с кэшом
+        if os.path.exists(Cacher.CACHE_PARAMS["CACHE_DIR"]):
+            rmtree(Cacher.CACHE_PARAMS["CACHE_DIR"])
         os.mkdir(Cacher.CACHE_PARAMS["CACHE_DIR"])
 
     @staticmethod
