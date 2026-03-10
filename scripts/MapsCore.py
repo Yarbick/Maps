@@ -56,6 +56,14 @@ class Maps(arcade.Window, API):
         self.change_theme_button.on_click = lambda event: self.change_theme()
         self.ui_manager.add(self.change_theme_button)
 
+        # Кнопка включения поиска почтового индекса
+        self.postal_code_button: arcade.gui.UIFlatButton = arcade.gui.UIFlatButton(
+            width=150, height=40, text="On postal"
+        )
+        self.postal_code_button.on_click = lambda event: self.change_postal_code()
+        self.postal_code_button.value_status = False
+        self.ui_manager.add(self.postal_code_button)
+
         # Поле ввода текста для поиска
         self.search_input_text: arcade.gui.UIInputText = arcade.gui.UIInputText(
             width=200, height=40, font_size=16, text_color=(140, 140, 140)
@@ -78,9 +86,17 @@ class Maps(arcade.Window, API):
 
         # Поле вывода адреса
         self.address_label: arcade.gui.UILabel = arcade.gui.UILabel(
-            width=385, height=40
+            width=300, height=40
         )
+        self.address_label.visible = False
         self.ui_manager.add(self.address_label)
+
+        # Поле вывода почтового индекса
+        self.postal_code_label: arcade.gui.UILabel = arcade.gui.UILabel(
+            width=80, height=40
+        )
+        self.postal_code_label.visible = False
+        self.ui_manager.add(self.postal_code_label)
 
         # Настройка расположения и стилей виджетов
         self.update_ui()
@@ -93,6 +109,12 @@ class Maps(arcade.Window, API):
         # Кнопка смены темы
         self.change_theme_button.right, self.change_theme_button.top = self.width - 10, self.height - 10
         self.change_theme_button.style = theme_style.ui_flat_button
+
+        # Кнопка включения поиска почтового индекса
+        self.postal_code_button.right, self.postal_code_button.top = (
+            self.width - 10, self.change_theme_button.bottom - 10
+        )
+        self.postal_code_button.style = theme_style.ui_flat_button
 
         # Поле ввода текста для поиска
         self.search_input_text.left, self.search_input_text.top = 10, self.height - 10
@@ -119,6 +141,16 @@ class Maps(arcade.Window, API):
         self.address_label._border_color = theme_style.ui_label["border_color"]
         self.address_label._border_width = theme_style.ui_label["border_width"]
 
+        # Поле вывода почтового индекса
+        self.postal_code_label.left, self.postal_code_label.top = self.address_label.right + 5, self.address_label.top
+        self.postal_code_label.update_font(
+            font_size=theme_style.ui_label["font_size"],
+            font_color=theme_style.ui_label["text_color"]
+        )
+        self.postal_code_label._bg_color = theme_style.ui_label["bg_color"]
+        self.postal_code_label._border_color = theme_style.ui_label["border_color"]
+        self.postal_code_label._border_width = theme_style.ui_label["border_width"]
+
     def change_theme(self) -> None:
         """Изменение темы приложения (тёмная/светлая)"""
 
@@ -128,11 +160,21 @@ class Maps(arcade.Window, API):
         self.update_ui()
         self.get_map_image()
 
+    def change_postal_code(self) -> None:
+        """Включает/выключает отображение почтового индекса"""
+
+        # Смена режима кнопки
+        self.postal_code_button.value_status = not self.postal_code_button.value_status
+        self.postal_code_button.text = f"{"Off" if self.postal_code_button.value_status else "On"} Postal"
+
     def clear_result(self) -> None:
         """Очистка результатов поиска"""
 
-        # Очистка адреса
+        # Очистка данных о найденном топониме
         self.address_label.text = ""
+        self.address_label.visible = False
+        self.postal_code_label.text = ""
+        self.postal_code_label.visible = False
 
         # Очистка меток на карте
         self.map_pt.clear()
@@ -162,9 +204,14 @@ class Maps(arcade.Window, API):
             # Получение информации о топониме
             toponym_ll: str = API.GeocodeMaps.get_toponym_ll(toponym)
             toponym_address: str = API.GeocodeMaps.get_toponym_address(toponym)
+            toponym_postal_code: str = API.GeocodeMaps.get_toponym_postal_code(toponym)
 
             # Вывод адреса
             self.address_label.text = toponym_address
+            self.address_label.visible = True
+            if self.postal_code_button.value_status:
+                self.postal_code_label.text = toponym_postal_code if toponym_postal_code else "Почтовый ID отсутствует"
+            self.postal_code_label.visible = self.postal_code_button.value_status
 
             # Перемещение карты к топониму
             self.map_long, self.map_lat = map(float, toponym_ll.split(","))

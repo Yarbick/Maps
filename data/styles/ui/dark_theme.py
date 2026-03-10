@@ -53,7 +53,7 @@ DEFAULT_INPUT_TEXT_STYLE = {
     )
 }
 DEFAULT_LABEL_STYLE = {
-    "font_size": 16,
+    "font_size": 10,
     "text_color": (255, 255, 255),
     "bg_color": arcade.color.Color(40, 40, 40),
     "border_width": 2,

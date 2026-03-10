@@ -129,6 +129,15 @@ class API:
 
             return toponym_address
 
+        @staticmethod
+        def get_toponym_postal_code(toponym: dict) -> str:
+            """Готовый метод для получения адреса топонима"""
+
+            # Получение адреса
+            toponym_postal_code: str = API.GeocodeMaps.AnswerProcessing.get_toponym_postal_code(toponym)
+
+            return toponym_postal_code
+
         class Response:
             """Класс с методами для работы с запросами"""
 
@@ -177,3 +186,14 @@ class API:
                 toponym_address: str = toponym["metaDataProperty"]["GeocoderMetaData"]["text"]
 
                 return toponym_address
+
+            @staticmethod
+            def get_toponym_postal_code(toponym: dict) -> str:
+                """Получение адреса топонима"""
+
+                try:
+                    toponym_postal_code: str = toponym["metaDataProperty"]["GeocoderMetaData"]["Address"]["postal_code"]
+
+                    return toponym_postal_code
+                except KeyError:
+                    return None
