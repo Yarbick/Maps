@@ -69,6 +69,13 @@ class Maps(arcade.Window, API):
         self.search_button.on_click = lambda event: self.search_toponym(self.search_input_text.text)
         self.ui_manager.add(self.search_button)
 
+        # Кнопка для очистки результатов поиска
+        self.clear_result_button: arcade.gui.UIFlatButton = arcade.gui.UIFlatButton(
+            width=75, height=40, text="Clear"
+        )
+        self.clear_result_button.on_click = lambda event: self.clear_result()
+        self.ui_manager.add(self.clear_result_button)
+
         # Настройка расположения и стилей виджетов
         self.update_ui()
 
@@ -88,9 +95,13 @@ class Maps(arcade.Window, API):
         self.search_input_text.disabled = not self.search_input_text.disabled
         self.search_input_text.disabled = not self.search_input_text.disabled
 
-        # Кнопка смены темы
+        # Кнопка поиска
         self.search_button.left, self.search_button.top = self.search_input_text.right + 5, self.height - 10
         self.search_button.style = theme_style.uiflatbutton
+
+        # Кнопка очистки результатов поиска
+        self.clear_result_button.left, self.clear_result_button.top = self.search_button.right + 5, self.height - 10
+        self.clear_result_button.style = theme_style.uiflatbutton
 
     def change_theme(self) -> None:
         """Изменение темы приложения (тёмная/светлая)"""
@@ -99,6 +110,14 @@ class Maps(arcade.Window, API):
 
         # Смена темы у всех объектов
         self.update_ui()
+        self.get_map_image()
+
+    def clear_result(self) -> None:
+        """Очистка результатов поиска"""
+
+        # Очистка меток на карте
+        self.map_pt.clear()
+        # Обновление карты
         self.get_map_image()
 
     # Запросы
