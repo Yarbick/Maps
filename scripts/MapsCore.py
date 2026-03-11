@@ -9,6 +9,8 @@ import data.styles.ui.light_theme as light_theme_style
 import data.styles.ui.dark_theme as dark_theme_style
 # Работа с API
 from scripts.MapsAPI import API
+# Математические расчёты
+from math import cos
 
 
 class Maps(arcade.Window, API):
@@ -23,6 +25,9 @@ class Maps(arcade.Window, API):
     # Методы карты
     def setup_map(self) -> None:
         """Загрузка карты"""
+
+        # Размер карты
+        self.map_width, self.map_height = 650, 450
 
         # Масштаб карты
         self.min_map_z, self.max_map_z = 0, 21
@@ -74,7 +79,7 @@ class Maps(arcade.Window, API):
         self.search_button: arcade.gui.UIFlatButton = arcade.gui.UIFlatButton(
             width=100, height=40, text="Search"
         )
-        self.search_button.on_click = lambda event: self.search_toponym(self.search_input_text.text)
+        self.search_button.on_click = lambda event: self.search_toponym(self.search_input_text.text, True)
         self.ui_manager.add(self.search_button)
 
         # Кнопка для очистки результатов поиска
@@ -86,14 +91,14 @@ class Maps(arcade.Window, API):
 
         # Поле вывода адреса
         self.address_label: arcade.gui.UILabel = arcade.gui.UILabel(
-            width=300, height=40
+            width=300, height=40, size_hint_max=(300, 40)
         )
         self.address_label.visible = False
         self.ui_manager.add(self.address_label)
 
         # Поле вывода почтового индекса
         self.postal_code_label: arcade.gui.UILabel = arcade.gui.UILabel(
-            width=80, height=40
+            width=80, height=40, size_hint_max=(80, 40)
         )
         self.postal_code_label.visible = False
         self.ui_manager.add(self.postal_code_label)
@@ -191,10 +196,11 @@ class Maps(arcade.Window, API):
             ll=f"{self.map_long},{self.map_lat}",
             z=str(self.map_z),
             pt="~".join(self.map_pt),
+            size=f"{self.map_width},{self.map_height}",
             theme=self.theme
         )
 
-    def search_toponym(self, geocode: str) -> None:
+    def search_toponym(self, geocode: str, move: bool) -> None:
         """Поиск топонима и указание на карте"""
 
         # Получение топонима
@@ -210,12 +216,12 @@ class Maps(arcade.Window, API):
             # Вывод адреса
             self.address_label.text = toponym_address
             self.address_label.visible = True
-            if self.postal_code_button.value_status:
-                self.postal_code_label.text = toponym_postal_code if toponym_postal_code else "Почтовый ID отсутствует"
+            self.postal_code_label.text = toponym_postal_code if toponym_postal_code else "Почтовый ID отсутствует"
             self.postal_code_label.visible = self.postal_code_button.value_status
 
-            # Перемещение карты к топониму
-            self.map_long, self.map_lat = map(float, toponym_ll.split(","))
+            if move:
+                # Перемещение карты к топониму
+                self.map_long, self.map_lat = map(float, toponym_ll.split(","))
             # Добавление метки на карту
             self.map_pt.clear()
             self.map_pt.append(f"{toponym_ll},{self.map_pt_style}")
@@ -271,3 +277,19 @@ class Maps(arcade.Window, API):
         # Обновление карты
         if map_changed:
             self.get_map_image()
+
+    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            # Расчёт разницы между центром и кликом мыши в пикселях
+            size_diff_x, size_diff_y = self.map_width / self.width, self.map_height / self.height
+            delta_x, delta_y = (x - self.width / 2) * size_diff_x, (y - self.height / 2) * size_diff_y
+
+            # Расчёт широты координат клика мыши
+            coef_lat = 180 / 2 ** (self.map_z + 8)
+            mouse_click_lat = self.map_lat + delta_y * coef_lat
+            # Расчёт долготы координат клика мыши
+            coef_long = cos(0) * 360 / 2 ** (self.map_z + 8)
+            mouse_click_long = self.map_long + delta_x * coef_long
+
+            # Поиск объекта по координатам клика
+            self.search_toponym(f"{mouse_click_long},{mouse_click_lat}", False)
