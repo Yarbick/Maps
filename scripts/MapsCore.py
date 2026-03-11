@@ -166,6 +166,7 @@ class Maps(arcade.Window, API):
         # Смена режима кнопки
         self.postal_code_button.value_status = not self.postal_code_button.value_status
         self.postal_code_button.text = f"{"Off" if self.postal_code_button.value_status else "On"} Postal"
+        self.postal_code_label.visible = self.postal_code_button.value_status and self.address_label.visible
 
     def clear_result(self) -> None:
         """Очистка результатов поиска"""
