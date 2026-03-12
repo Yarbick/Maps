@@ -47,6 +47,15 @@ class Maps(arcade.Window, API):
         # Получение карты
         self.get_map_image()
 
+    def set_map_pt(self, ll: str) -> None:
+        """Добавление метки на карту"""
+
+        # Замена метки в списке
+        self.map_pt.clear()
+        self.map_pt.append(f"{ll},{self.map_pt_style}")
+        # Обновление карты
+        self.get_map_image()
+
     # Методы интерфейса
     def setup_ui(self) -> None:
         """Загрузка интерфейса"""
@@ -103,6 +112,13 @@ class Maps(arcade.Window, API):
         self.postal_code_label.visible = False
         self.ui_manager.add(self.postal_code_label)
 
+        # Поле вывода информации об организации
+        self.organization_label: arcade.gui.UILabel = arcade.gui.UILabel(
+            width=300, height=90, size_hint_max=(300, 90), multiline=True
+        )
+        self.organization_label.visible = False
+        self.ui_manager.add(self.organization_label)
+
         # Настройка расположения и стилей виджетов
         self.update_ui()
 
@@ -156,6 +172,16 @@ class Maps(arcade.Window, API):
         self.postal_code_label._border_color = theme_style.ui_label["border_color"]
         self.postal_code_label._border_width = theme_style.ui_label["border_width"]
 
+        # Поле вывода информации об организации
+        self.organization_label.left, self.organization_label.top = 10, self.address_label.bottom - 5
+        self.organization_label.update_font(
+            font_size=theme_style.ui_label["font_size"],
+            font_color=theme_style.ui_label["text_color"]
+        )
+        self.organization_label._bg_color = theme_style.ui_label["bg_color"]
+        self.organization_label._border_color = theme_style.ui_label["border_color"]
+        self.organization_label._border_width = theme_style.ui_label["border_width"]
+
     def change_theme(self) -> None:
         """Изменение темы приложения (тёмная/светлая)"""
 
@@ -181,6 +207,8 @@ class Maps(arcade.Window, API):
         self.address_label.visible = False
         self.postal_code_label.text = ""
         self.postal_code_label.visible = False
+        self.organization_label.text = ""
+        self.organization_label.visible = False
 
         # Очистка меток на карте
         self.map_pt.clear()
@@ -213,22 +241,65 @@ class Maps(arcade.Window, API):
             toponym_address: str = API.GeocodeMaps.get_toponym_address(toponym)
             toponym_postal_code: str = API.GeocodeMaps.get_toponym_postal_code(toponym)
 
-            # Вывод адреса
+            # Вывод информации
+            # Адрес
             self.address_label.text = toponym_address
             self.address_label.visible = True
-            self.postal_code_label.text = toponym_postal_code if toponym_postal_code else "Почтовый ID отсутствует"
+            # Почтовый индекс
+            self.postal_code_label.text = toponym_postal_code if toponym_postal_code else \
+                "Почтовый ID отсутствует"
             self.postal_code_label.visible = self.postal_code_button.value_status
+            # Информация об организации
+            self.organization_label.visible = False
 
+            # Перемещение карты к топониму
             if move:
-                # Перемещение карты к топониму
                 self.map_long, self.map_lat = map(float, toponym_ll.split(","))
             # Добавление метки на карту
-            self.map_pt.clear()
-            self.map_pt.append(f"{toponym_ll},{self.map_pt_style}")
-            # Обновление карты
-            self.get_map_image()
+            self.set_map_pt(toponym_ll)
         else:
             self.search_input_text.text = "Адрес не найден"
+
+    def search_organization(self, text: str, ll: str, move: bool) -> None:
+        """Поиск организации и указание на карте"""
+
+        # Получение организации
+        organization: dict | None = API.SearchMaps.get_organization(
+            text=text,
+            ll=ll
+        )
+        if organization:
+            # Получение информации об организации
+            organization_id: str = API.SearchMaps.get_organization_id(organization)
+            organization_ll: str = API.SearchMaps.get_organization_ll(organization)
+            organization_address: str = API.SearchMaps.get_organization_address(organization)
+            organization_postal_code: str | None = API.SearchMaps.get_organization_postal_code(organization)
+            organization_name: str = API.SearchMaps.get_organization_name(organization)
+            organization_categories: list | None = API.SearchMaps.get_organization_categories(organization)
+            organization_phones: list | None = API.SearchMaps.get_organization_phones(organization)
+
+            # Вывод информации
+            # Адрес
+            self.address_label.text = organization_address
+            self.address_label.visible = True
+            # Почтовый индекс
+            self.postal_code_label.text = organization_postal_code if organization_postal_code else \
+                "Почтовый ID отсутствует"
+            self.postal_code_label.visible = self.postal_code_button.value_status
+            # Информация об организации
+            self.organization_label.text = f"Id: {organization_id
+            }\nName: {organization_name
+            }\nCategories: {", ".join(organization_categories) if organization_categories else "Отсутствует"
+            }\nPhones: {", ".join(organization_phones) if organization_phones else "Отсутствует"}"
+            self.organization_label.visible = True
+
+            # Перемещение карты к организации
+            if move:
+                self.map_long, self.map_lat = map(float, toponym_ll.split(","))
+            # Добавление метки на карту
+            self.set_map_pt(organization_ll)
+        else:
+            self.search_input_text.text = "Организаций не найдено"
 
     # Методы arcade.Window
     def on_draw(self) -> None:
@@ -279,17 +350,28 @@ class Maps(arcade.Window, API):
             self.get_map_image()
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
+        # Расчёт разницы между центром и кликом мыши в пикселях
+        size_diff_x, size_diff_y = self.map_width / self.width, self.map_height / self.height
+        delta_x, delta_y = (x - self.width / 2) * size_diff_x, (y - self.height / 2) * size_diff_y
+
+        # Расчёт широты координат клика мыши
+        coef_lat = 180 / 2 ** (self.map_z + 8)
+        mouse_click_lat = self.map_lat + delta_y * coef_lat
+        # Расчёт долготы координат клика мыши
+        coef_long = cos(0) * 360 / 2 ** (self.map_z + 8)
+        mouse_click_long = self.map_long + delta_x * coef_long
+
         if button == arcade.MOUSE_BUTTON_LEFT:
-            # Расчёт разницы между центром и кликом мыши в пикселях
-            size_diff_x, size_diff_y = self.map_width / self.width, self.map_height / self.height
-            delta_x, delta_y = (x - self.width / 2) * size_diff_x, (y - self.height / 2) * size_diff_y
+            # Поиск адреса по координатам клика
+            self.search_toponym(
+                f"{mouse_click_long},{mouse_click_lat}", False
+            )
+        elif button == arcade.MOUSE_BUTTON_RIGHT:
+            # Поиск адреса по клику
+            search_toponym = API.GeocodeMaps.get_toponym(geocode=f"{mouse_click_long},{mouse_click_lat}")
+            search_toponym_address = API.GeocodeMaps.get_toponym_address(search_toponym)
 
-            # Расчёт широты координат клика мыши
-            coef_lat = 180 / 2 ** (self.map_z + 8)
-            mouse_click_lat = self.map_lat + delta_y * coef_lat
-            # Расчёт долготы координат клика мыши
-            coef_long = cos(0) * 360 / 2 ** (self.map_z + 8)
-            mouse_click_long = self.map_long + delta_x * coef_long
-
-            # Поиск объекта по координатам клика
-            self.search_toponym(f"{mouse_click_long},{mouse_click_lat}", False)
+            # Поиск организации по адресу
+            self.search_organization(
+                search_toponym_address, f"{mouse_click_long},{mouse_click_lat}", False
+            )

@@ -107,7 +107,7 @@ class API:
             # Запрос
             response: requests.Response = API.GeocodeMaps.Response.get(**params)
             # Получение топонима
-            toponym: dict = API.GeocodeMaps.AnswerProcessing.get_toponym(response)
+            toponym: dict | None = API.GeocodeMaps.AnswerProcessing.get_toponym(response)
 
             return toponym
 
@@ -131,9 +131,9 @@ class API:
 
         @staticmethod
         def get_toponym_postal_code(toponym: dict) -> str:
-            """Готовый метод для получения адреса топонима"""
+            """Готовый метод для получения почтового индекса топонима"""
 
-            # Получение адреса
+            # Получение почтового индекса
             toponym_postal_code: str = API.GeocodeMaps.AnswerProcessing.get_toponym_postal_code(toponym)
 
             return toponym_postal_code
@@ -188,12 +188,210 @@ class API:
                 return toponym_address
 
             @staticmethod
-            def get_toponym_postal_code(toponym: dict) -> str:
+            def get_toponym_postal_code(toponym: dict) -> str | None:
                 """Получение адреса топонима"""
 
                 try:
-                    toponym_postal_code: str = toponym["metaDataProperty"]["GeocoderMetaData"]["Address"]["postal_code"]
+                    toponym_postal_code: str = (
+                        toponym["metaDataProperty"]["GeocoderMetaData"]["Address"]["postal_code"]
+                    )
 
                     return toponym_postal_code
+                except KeyError:
+                    return None
+
+    class SearchMaps:
+        """Класс для работы с API сервиса search-maps.yandex.ru"""
+
+        @staticmethod
+        def get_organization(**params) -> dict | None:
+            """Готовый метод для получения организации"""
+
+            # Запрос
+            response: requests.Response = API.SearchMaps.Response.get(**params)
+            # Получение топонима
+            organization: dict | None = API.SearchMaps.AnswerProcessing.get_organization(response)
+
+            return organization
+
+        @staticmethod
+        def get_organization_id(organization: dict) -> str:
+            """Готовый метод для ID организации"""
+
+            # Получение координат организации
+            organization_id: str = API.SearchMaps.AnswerProcessing.get_organization_id(organization)
+
+            return organization_id
+
+        @staticmethod
+        def get_organization_ll(organization: dict) -> str:
+            """Готовый метод для получения координат организации"""
+
+            # Получение координат организации
+            organization_ll: str = API.SearchMaps.AnswerProcessing.get_organization_ll(organization)
+
+            return organization_ll
+
+        @staticmethod
+        def get_organization_address(organization: dict) -> str:
+            """Готовый метод для получения адреса организации"""
+
+            # Получение адреса организации
+            organization_address: str = API.SearchMaps.AnswerProcessing.get_organization_address(organization)
+
+            return organization_address
+
+        @staticmethod
+        def get_organization_name(organization: dict) -> str:
+            """Готовый метод для получения имени организации"""
+
+            # Получение имени организации
+            organization_name: str = API.SearchMaps.AnswerProcessing.get_organization_name(organization)
+
+            return organization_name
+
+        @staticmethod
+        def get_organization_categories(organization: dict) -> list | None:
+            """Готовый метод для получения категорий организации"""
+
+            # Получение имени организации
+            organization_categories: list | None = (
+                API.SearchMaps.AnswerProcessing.get_organization_categories(organization))
+
+            return organization_categories
+
+        @staticmethod
+        def get_organization_phones(organization: dict) -> list | None:
+            """Готовый метод для получения номеров телефонов организации"""
+
+            # Получение имени организации
+            organization_phones: list | None = API.SearchMaps.AnswerProcessing.get_organization_phones(organization)
+
+            return organization_phones
+
+        @staticmethod
+        def get_organization_postal_code(organization: dict) -> str:
+            """Готовый метод для получения почтового индекса организации"""
+
+            # Получение почтового индекса организации
+            organization_postal_code: str = API.SearchMaps.AnswerProcessing.get_organization_postal_code(organization)
+
+            return organization_postal_code
+
+        class Response:
+            """Класс с методами для работы с запросами"""
+
+            @staticmethod
+            def get(**params) -> requests.Response:
+                """SearchMaps GET-запрос"""
+
+                # Параметры запроса
+                server_address = "https://search-maps.yandex.ru/v1"
+                params["apikey"] = params.get("apikey", os.getenv("SEARCH_MAPS_APIKEY"))
+                params["lang"] = params.get("lang", "ru_RU")
+                params["type"] = params.get("type", "biz")
+
+                # Запрос
+                response: requests.Response = API.Base.Response.get(server_address, params=params)
+
+                return response
+
+        class AnswerProcessing:
+            """Класс для обработки ответов из запросов"""
+
+            @staticmethod
+            def get_organization(response: requests.Response) -> dict | None:
+                """Получение организации из запроса"""
+
+                json_response = response.json()
+
+                # Получение координат точки центра и запроса
+                for param in response.url.split("&"):
+                    if param.split("=")[0] == "ll":
+                        center_long, center_lat = map(float, param.split("=", 1)[1].split("%2C"))
+
+                        break
+
+                # Получение ближайшей организации
+                organizations: dict = json_response["features"]
+                for organization in organizations:
+                    # Расчёт дистанции между центральной точкой и организации
+                    organization_long, organization_lat = organization["geometry"]["coordinates"]
+                    distant = ((organization_long - center_long) ** 2 + (organization_lat - center_lat) ** 2) ** 0.5
+
+                    if distant * 11100 <= 50:
+                        return organization
+                return None
+
+            @staticmethod
+            def get_organization_id(organization: dict) -> str:
+                """Получение ID организации"""
+
+                organization_id: str = organization["properties"]["CompanyMetaData"]["id"]
+
+                return organization_id
+
+            @staticmethod
+            def get_organization_ll(organization: dict) -> str:
+                """Получение координат организации"""
+
+                organization_ll: str = ",".join(map(str, organization["geometry"]["coordinates"]))
+
+                return organization_ll
+
+            @staticmethod
+            def get_organization_address(organization: dict) -> str:
+                """Получение адреса организации"""
+
+                organization_address: str = organization["properties"]["CompanyMetaData"]["address"]
+
+                return organization_address
+
+            @staticmethod
+            def get_organization_name(organization: dict) -> str:
+                """Получение имени организации"""
+
+                organization_name: str = organization["properties"]["CompanyMetaData"]["name"]
+
+                return organization_name
+
+            @staticmethod
+            def get_organization_categories(organization: dict) -> list | None:
+                """Получение категорий организации"""
+
+                try:
+                    organization_categories: list = [
+                        category["name"]
+                        for category in organization["properties"]["CompanyMetaData"]["Categories"]
+                    ]
+
+                    return organization_categories
+                except KeyError:
+                    return None
+
+            @staticmethod
+            def get_organization_phones(organization: dict) -> list | None:
+                """Получение номеров телефонов организации"""
+
+                try:
+                    organization_phones: list = [
+                        phone["formatted"]
+                        for phone in organization["properties"]["CompanyMetaData"]["Phones"]
+                    ]
+
+                    return organization_phones
+                except KeyError:
+                    return None
+
+            @staticmethod
+            def get_organization_postal_code(organization: dict) -> str | None:
+                """Получение почтового индекса организации"""
+
+                try:
+                    organization_postal_code: str = (
+                        organization["properties"]["CompanyMetaData"]["Address"]["postal_code"]
+                    )
+
+                    return organization_postal_code
                 except KeyError:
                     return None

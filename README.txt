@@ -9,6 +9,7 @@
   Создайте файл .env и запишите туда:
     STATIC_MAPS_APIKEY=<API ключ сервиса static-maps.yandex.ru>
     GEOCODE_MAPS_APIKEY=<API ключ сервиса geocode-maps.yandex.ru>
+    SEARCH_MAPS_APIKEY=<API ключ сервиса search-maps.yandex.ru>
   !! Данные действия необходимы для защиты персональных данных !!
 
   Запускать через Maps.exe
